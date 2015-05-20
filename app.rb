@@ -20,12 +20,12 @@ post '/go' do
   if params[:radius_in_miles].nil?
     radius = (5 * 1609.34)
   else
-    radius = params[:radius_in_miles].to_i * 1609.34
+    radius = params[:radius_in_miles].to_f * 1609.34
   end
 
   client = GooglePlaces::Client.new(GOOGLE_PLACES["api_key"])
 
-  spots = client.spots(params[:lat], params[:lng], types: ['restaurant'], radius: radius)
+  spots = client.spots(params[:lat], params[:lng], types: ['restaurant'], radius: radius.round)
 
   if !spots.empty?
     spot = spots.sample
