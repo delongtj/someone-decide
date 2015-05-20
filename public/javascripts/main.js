@@ -7,6 +7,7 @@ $(document).on("ready", function(){
   $placeLocation = $("#placeLocation")
   $slider = $("#slider")
   $range = $("#range")
+  $units = $("#units")
 
   function getLocation() {
     navigator.geolocation.getCurrentPosition(getResults);
@@ -38,6 +39,12 @@ $(document).on("ready", function(){
 
   $slider.on("change", function(event){
     $range.html($slider.val())
+
+    if(parseInt($slider.val()) <= 1)
+      $units.html("mile");
+    else
+      $units.html("miles");
+
   })
 
   $slider.change()
