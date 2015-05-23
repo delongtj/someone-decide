@@ -25,7 +25,15 @@ post '/go' do
 
   client = GooglePlaces::Client.new(GOOGLE_PLACES["api_key"])
 
-  spots = client.spots(params[:lat], params[:lng], types: ['restaurant'], radius: radius.round)
+  opts = {
+    types: ['restaurant'],
+    radius: radius.round,
+    opennow: true
+  }
+
+  opts[:keyword] = params[:keyword] unless params[:keyword].nil?
+
+  spots = client.spots(params[:lat], params[:lng], opts)
 
   if !spots.empty?
     spot = spots.sample
@@ -35,6 +43,6 @@ post '/go' do
       location: spot.vicinity
     }.to_json
   else
-    "No results found"
+    {}.to_json
   end
 end
