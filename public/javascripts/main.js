@@ -50,7 +50,7 @@ $(document).on("ready", function(){
     getLocation()
   })
 
-  $slider.on("change", function(event){
+  $slider.on("input", function(event){
     $range.html($slider.val())
 
     if(parseInt($slider.val()) <= 1)
@@ -60,5 +60,5 @@ $(document).on("ready", function(){
 
   })
 
-  $slider.change()
+  $slider.trigger("input")
 })
