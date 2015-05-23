@@ -2,3 +2,7 @@
   left: 20% !important;
   top: 14% !important;
 }
+
+#advanced { 
+  display: none;
+}

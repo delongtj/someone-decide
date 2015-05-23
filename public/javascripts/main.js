@@ -1,6 +1,8 @@
 $(document).on("ready", function(){
   $go = $("#go")
   spinner = Ladda.create($go[0])
+  $toggleAdvanced = $("#toggle-advanced")
+  $advanced = $("#advanced")
   $results = $("#results")
   $placeName = $("#placeName")
   $placeLocation = $("#placeLocation")
@@ -57,7 +59,16 @@ $(document).on("ready", function(){
       $units.html("mile");
     else
       $units.html("miles");
+  })
 
+  $toggleAdvanced.on("click", function(event) {
+
+    if($toggleAdvanced.html() == "Advanced")
+      $toggleAdvanced.html("Simple")
+    else
+      $toggleAdvanced.html("Advanced")
+    
+    $advanced.slideToggle();
   })
 
   $slider.trigger("input")
