@@ -1,75 +1,78 @@
-$(document).on("ready", function(){
-  $go = $("#go")
-  spinner = Ladda.create($go[0])
-  $toggleAdvanced = $("#toggle-advanced")
-  $advanced = $("#advanced")
-  $results = $("#results")
-  $placeName = $("#placeName")
-  $placeLocation = $("#placeLocation")
-  $slider = $("#slider")
-  $range = $("#range")
-  $units = $("#units")
-  $keyword = $("#keyword")
+(function(){
+  $(document).on("ready", function(){
+    $go = $("#go");
+    spinner = Ladda.create($go[0]);
+    $toggleAdvanced = $("#toggle-advanced");
+    $advanced = $("#advanced");
+    $results = $("#results");
+    $placeName = $("#placeName");
+    $placeLocation = $("#placeLocation");
+    $slider = $("#slider");
+    $range = $("#range");
+    $units = $("#units");
+    $keyword = $("#keyword");
 
-  function getLocation() {
-    navigator.geolocation.getCurrentPosition(getResults);
-  }
+    function getLocation() {
+      navigator.geolocation.getCurrentPosition(getResults);
+    }
 
-  function getResults(position) {
-    $.ajax({
-      method: "POST",
-      dataType: "JSON",
-      url: "/go",
-      data: { 
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-        radius_in_miles: $slider.val(),
-        keyword: $keyword.val()
-      }
-    }).done(function(response){
-      if(typeof(response.name) != "undefined"){
-        $placeName.html(response.name);
+    function getResults(position) {
+      $.ajax({
+        method: "POST",
+        dataType: "JSON",
+        url: "/go",
+        data: { 
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          radius_in_miles: $slider.val(),
+          keyword: $keyword.val()
+        }
+      }).done(function(response){
+        if(typeof(response.name) != "undefined"){
+          $results.attr("data-place-id", response.place_id);
+          $placeName.html(response.name);
 
-        link = "<a href='https://www.google.com/maps/place/" + response.location.replace(' ', '+') + "' target='_blank'>" + response.location + "</a>";
+          link = "<a href='https://www.google.com/maps/place/" + response.location.replace(' ', '+') + "' target='_blank'>" + response.location + "</a>";
 
-        $placeLocation.html(link)
-      }
-      else {
-        $placeName.html("No results :(");
-        $placeLocation.html("");
-      }
+          $placeLocation.html(link);
+        }
+        else {
+          $placeName.html("No results :(");
+          $placeLocation.html("");
+        }
 
-    }).always(function(){
-      spinner.stop()
+      }).always(function(){
+        spinner.stop();
+      })
+    }
+
+    $go.on("click", function(event){
+      event.preventDefault();
+
+      spinner.start();
+
+      getLocation();
     })
-  }
 
-  $go.on("click", function(event){
-    event.preventDefault();
+    $slider.on("input", function(event){
+      $range.html($slider.val());
 
-    spinner.start();
+      if(parseInt($slider.val()) <= 1)
+        $units.html("mile");
+      else
+        $units.html("miles");
+    })
 
-    getLocation()
-  })
+    $toggleAdvanced.on("click", function(event) {
 
-  $slider.on("input", function(event){
-    $range.html($slider.val())
+      if($toggleAdvanced.html() == "Advanced")
+        $toggleAdvanced.html("Simple");
+      else
+        $toggleAdvanced.html("Advanced");
 
-    if(parseInt($slider.val()) <= 1)
-      $units.html("mile");
-    else
-      $units.html("miles");
-  })
+      $advanced.slideToggle();
+    })
 
-  $toggleAdvanced.on("click", function(event) {
-
-    if($toggleAdvanced.html() == "Advanced")
-      $toggleAdvanced.html("Simple")
-    else
-      $toggleAdvanced.html("Advanced")
-    
-    $advanced.slideToggle();
-  })
-
-  $slider.trigger("input")
-})
+    $slider.trigger("input");
+  });
+})();

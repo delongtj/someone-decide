@@ -10,6 +10,10 @@ get '/' do
   erb :index
 end
 
+get '/about' do
+  erb :about
+end
+
 get '/heartbeat' do
   client = GooglePlaces::Client.new(GOOGLE_PLACES["api_key"])
 
@@ -39,8 +43,11 @@ post '/go' do
     spot = spots.sample
 
     {
+      place_id: spot.place_id,
       name: spot.name,
-      location: spot.vicinity
+      location: spot.vicinity,
+      open_until: "",
+
     }.to_json
   else
     {}.to_json
