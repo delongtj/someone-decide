@@ -47,6 +47,8 @@
     }
 
     $go.on("click", function(event){
+      ga('send', 'event', 'button', 'click', 'action', 'go');
+
       event.preventDefault();
 
       spinner.start();
@@ -72,6 +74,10 @@
 
       $advanced.slideToggle();
     })
+
+    $("#placeLocation a").on("click", function(event) {
+      ga('send', 'event', 'link', 'click', 'maps');
+    });
 
     $slider.trigger("input");
   });
