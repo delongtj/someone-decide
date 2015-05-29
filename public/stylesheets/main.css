@@ -3,6 +3,10 @@
   top: 14% !important;
 }
 
-#advanced { 
+#advanced, #results { 
   display: none;
+}
+
+#wrapper {
+  min-height: 420px;
 }

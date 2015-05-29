@@ -39,6 +39,12 @@ post '/go' do
 
   spots = client.spots(params[:lat], params[:lng], opts)
 
+  unless cookies[:blacklist].nil?
+    blacklist = cookies[:blacklist].split("|")
+
+    spots.reject! { |s| blacklist.include?(s.place_id) }
+  end
+
   if !spots.empty?
     spot = spots.sample
 
