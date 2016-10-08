@@ -7,6 +7,10 @@ require "yelp"
 
 
 get '/' do
+  unless request.secure? || request.env['REQUEST_URI'].match('localhost')
+    redirect to(request.env['REQUEST_URI'].gsub('http://', 'https://'))
+  end
+
   erb :index
 end
 
@@ -48,11 +52,11 @@ post '/go' do
 
   results = client.search_by_coordinates(coordinates, opts)
 
-  # unless cookies[:blacklist].nil?
-  #   blacklist = cookies[:blacklist].split("|")
+  unless cookies[:blacklist].nil?
+    blacklist = cookies[:blacklist].split("|")
 
-  #   results.reject! { |s| blacklist.include?(s.place_id) }
-  # end
+    results.reject! { |e| blacklist.include?(e.id) }
+  end
 
   unless results.businesses.empty?
     result = results.businesses.sample
