@@ -1,9 +1,9 @@
 require "sinatra"
 require "pry"
-require './config/initializers/google_places.rb'
+require './config/initializers/yelp.rb'
 require "sinatra/cookies"
 require "json"
-require "google_places"
+require "yelp"
 
 
 get '/' do
@@ -15,9 +15,13 @@ get '/about' do
 end
 
 get '/heartbeat' do
-  client = GooglePlaces::Client.new(GOOGLE_PLACES["api_key"])
+  client = Yelp::Client.new({ consumer_key: YELP['consumer_key'],
+                            consumer_secret: YELP['consumer_secret'],
+                            token: YELP['token'],
+                            token_secret: YELP['token_secret']
+                          })
 
-  client.spots(36.0679, -86.7194).to_s
+  client.search('Nashville').businesses.map(&:name)
 end
 
 post '/go' do
@@ -27,31 +31,36 @@ post '/go' do
     radius = params[:radius_in_miles].to_f * 1609.34
   end
 
-  client = GooglePlaces::Client.new(GOOGLE_PLACES["api_key"])
+  client = Yelp::Client.new({ consumer_key: YELP['consumer_key'],
+                            consumer_secret: YELP['consumer_secret'],
+                            token: YELP['token'],
+                            token_secret: YELP['token_secret']
+                          })
 
   opts = {
-    types: ['restaurant'],
-    radius: radius.round,
-    opennow: true
+    category_filter: 'food',
+    radius_filter: radius.round
   }
 
-  opts[:keyword] = params[:keyword] unless params[:keyword].nil?
+  opts[:term] = params[:keyword] unless params[:keyword].nil?
 
-  spots = client.spots(params[:lat], params[:lng], opts)
+  coordinates = { latitude: params[:lat], longitude: params[:lng] }
 
-  unless cookies[:blacklist].nil?
-    blacklist = cookies[:blacklist].split("|")
+  results = client.search_by_coordinates(coordinates, opts)
 
-    spots.reject! { |s| blacklist.include?(s.place_id) }
-  end
+  # unless cookies[:blacklist].nil?
+  #   blacklist = cookies[:blacklist].split("|")
 
-  if !spots.empty?
-    spot = spots.sample
+  #   results.reject! { |s| blacklist.include?(s.place_id) }
+  # end
+
+  unless results.businesses.empty?
+    result = results.businesses.sample
 
     {
-      place_id: spot.place_id,
-      name: spot.name,
-      location: spot.vicinity,
+      place_id: result.id,
+      name: result.name,
+      location: result.location.display_address.join(' ').gsub(',', ''),
       open_until: "",
 
     }.to_json

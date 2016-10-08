@@ -5,4 +5,4 @@ gem 'sinatra-contrib'
 gem 'pry'
 gem 'dotenv'
 
-gem 'google_places'
+gem 'yelp'
