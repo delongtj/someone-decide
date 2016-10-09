@@ -4,6 +4,7 @@
     $blacklist = $("#blacklist");
 
     spinner = Ladda.create($go[0]);
+
     $toggleAdvanced = $("#toggle-advanced");
     $advanced = $("#advanced");
     $results = $("#results");
@@ -14,11 +15,35 @@
     $units = $("#units");
     $keyword = $("#keyword");
 
+    geoPosition = null;
+    geoPositionTimestamp = null;
+
     function getLocation() {
-      navigator.geolocation.getCurrentPosition(getResults);
+      if(geocodeNeeded()) {
+        navigator.geolocation.getCurrentPosition(getResults);
+      }
+      else {
+        getResults(geoPosition)
+      }
+    }
+
+    function geocodeNeeded() {
+      if(geoPosition == null || geoPositionTimestamp == null) {
+        return true;
+      }
+        
+      // Redo geocode every two minutes
+      if(new Date().getTime() - geoPositionTimestamp > 120000) {
+        return true;
+      }
+
+      return false;
     }
 
     function getResults(position) {
+      geoPosition = position;
+      geoPositionTimestamp = new Date().getTime();
+
       $.ajax({
         method: "POST",
         dataType: "JSON",
@@ -47,7 +72,7 @@
 
       }).always(function(){
         spinner.stop();
-        $results.fadeIn('fast')
+        $results.show();
       })
     }
 
@@ -56,7 +81,7 @@
 
       event.preventDefault();
 
-      $results.fadeOut('fast');
+      $results.hide();
 
       spinner.start();
 
@@ -79,7 +104,7 @@
 
       Cookies.set('blacklist', cookie);
 
-      $results.fadeOut('fast');
+      $results.hide();
     });
 
     $slider.on("input", function(event){

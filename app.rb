@@ -5,6 +5,7 @@ require "sinatra/cookies"
 require "json"
 require "yelp"
 
+enable :sessions
 
 get '/' do
   unless request.secure? || request.env['REQUEST_URI'].match('localhost')
@@ -35,36 +36,49 @@ post '/go' do
     radius = params[:radius_in_miles].to_f * 1609.34
   end
 
-  client = Yelp::Client.new({ consumer_key: YELP['consumer_key'],
+  request_hash = params.to_json
+
+  if session[:request_hash] == request_hash && session[:results]
+    results = session[:results]
+  else
+    client = Yelp::Client.new({ consumer_key: YELP['consumer_key'],
                             consumer_secret: YELP['consumer_secret'],
                             token: YELP['token'],
                             token_secret: YELP['token_secret']
                           })
 
-  opts = {
-    category_filter: 'food',
-    radius_filter: radius.round
-  }
+    opts = {
+      category_filter: 'restaurants',
+      radius_filter: radius.round
+    }
 
-  opts[:term] = params[:keyword] unless params[:keyword].nil?
+    opts[:term] = params[:keyword] unless params[:keyword].nil?
 
-  coordinates = { latitude: params[:lat], longitude: params[:lng] }
+    response = client.search_by_coordinates({ latitude: params[:lat], longitude: params[:lng] }, opts)
 
-  results = client.search_by_coordinates(coordinates, opts)
+    results = []
+
+    response.businesses.each do |business|
+      results << { id: business.id, name: business.name, location: business.location.display_address.join(' ').gsub(',', '') }
+    end
+
+    session[:request_hash] = request_hash
+    session[:results] = results
+  end
 
   unless cookies[:blacklist].nil?
     blacklist = cookies[:blacklist].split("|")
 
-    results.reject! { |e| blacklist.include?(e.id) }
+    results.reject! { |b| blacklist.include?(b[:id]) }
   end
 
-  unless results.businesses.empty?
-    result = results.businesses.sample
+  unless results.empty?
+    result = results.sample
 
     {
-      place_id: result.id,
-      name: result.name,
-      location: result.location.display_address.join(' ').gsub(',', ''),
+      place_id: result[:id],
+      name: result[:name],
+      location: result[:location],
       open_until: "",
 
     }.to_json
