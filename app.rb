@@ -50,9 +50,7 @@ post '/go' do
 
     opts = {
       category_filter: 'restaurants',
-      open_now: true,
-      radius_filter: radius.round,
-      limit: 50
+      radius_filter: radius.round
     }
 
     opts[:term] = params[:keyword] unless params[:keyword].nil?
