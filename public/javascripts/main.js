@@ -1,15 +1,11 @@
 (function(){
   $(document).on("ready", function(){
     $go = $("#go");
-    $blacklist = $("#blacklist");
 
     spinner = Ladda.create($go[0]);
 
-    $toggleAdvanced = $("#toggle-advanced");
-    $advanced = $("#advanced");
-    $results = $("#results");
-    $placeName = $("#placeName");
-    $placeLocation = $("#placeLocation");
+    $toggleOptions = $("#toggle-options");
+    $options = $("#options");
     $slider = $("#slider");
     $range = $("#range");
     $units = $("#units");
@@ -18,12 +14,16 @@
     geoPosition = null;
     geoPositionTimestamp = null;
 
+    map = null
+    locationMarker = null
+    resultMarker = null
+
     function getLocation() {
       if(geocodeNeeded()) {
         navigator.geolocation.getCurrentPosition(getResults);
       }
       else {
-        getResults(geoPosition)
+        getResults(geoPosition);
       }
     }
 
@@ -44,6 +44,14 @@
       geoPosition = position;
       geoPositionTimestamp = new Date().getTime();
 
+      if(map == null) {
+        renderMap(geoPosition);
+      }
+
+      if(resultMarker != null) {
+        resultMarker.setMap(null)
+      }
+
       $.ajax({
         method: "POST",
         dataType: "JSON",
@@ -56,23 +64,51 @@
         }
       }).done(function(response){
         if(typeof(response.name) != "undefined"){
-          $results.attr("data-place-id", response.place_id);
-          $placeName.html(response.name);
-
-          link = "<a href='https://www.google.com/maps/place/" + response.location.replace(' ', '+') + "' target='_blank'>" + response.location + "</a>";
-
-          $placeLocation.html(link);
-          $blacklist.show();
+          addPlace(response)
         }
         else {
-          $placeName.html("No results :(");
-          $placeLocation.html("");
-          $blacklist.hide();
+
         }
 
       }).always(function(){
         spinner.stop();
-        $results.show();
+      })
+    }
+
+    function renderMap(position) {
+      var here = { lat: position.coords.latitude, lng: position.coords.longitude };
+
+      map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 13,
+        center: here
+      });
+
+      locationMarker = new google.maps.Marker({
+        position: here,
+        map: map,
+        icon: '/images/star_icon.png'
+      });
+    }
+
+    function addPlace(response) {
+      resultMarker = new google.maps.Marker({
+        position: { lat: response.latitude, lng: response.longitude },
+        map: map
+      });
+
+      var content = '<div id="results" data-place-id="' + response.place_id + '">' + 
+          '<p class="lead">' + response.name + '</p>' +
+          '<p><small>' + response.categories + '</small></p>' +
+          '<address>' + response.location + '</address>' +
+          '<a class="btn btn-xs btn-danger" id="blacklist" href="#">Never again</a>' + 
+        '</div>';
+
+      var infoWindow = new google.maps.InfoWindow({ content: content })
+
+      infoWindow.open(map, resultMarker)
+
+      resultMarker.addListener('click', function(){
+        infoWindow.open(map, resultMarker)
       })
     }
 
@@ -81,21 +117,19 @@
 
       event.preventDefault();
 
-      $results.hide();
-
       spinner.start();
 
       getLocation();
     });
 
-    $blacklist.on("click", function(event){
+    $("body").on("click", "#blacklist", function(event){
       ga('send', 'event', 'button', 'click', 'action', 'blacklist');
 
       event.preventDefault();
 
-      place_id = $results.attr("data-place-id");
+      var place_id = $("#results").attr("data-place-id");
 
-      cookie = Cookies.get('blacklist') || "";
+      var cookie = Cookies.get('blacklist') || "";
 
       if (cookie == "")
         cookie = place_id
@@ -104,7 +138,7 @@
 
       Cookies.set('blacklist', cookie);
 
-      $results.hide();
+      resultMarker.setMap(null)
     });
 
     $slider.on("input", function(event){
@@ -116,15 +150,15 @@
         $units.html("miles");
     });
 
-    $toggleAdvanced.on("click", function(event) {
+    $toggleOptions.on("click", function(event) {
       event.preventDefault();
       
-      if($toggleAdvanced.html() == "Advanced")
-        $toggleAdvanced.html("Simple");
+      if($toggleOptions.html() == "Options")
+        $toggleOptions.html("Close Options");
       else
-        $toggleAdvanced.html("Advanced");
+        $toggleOptions.html("Options");
 
-      $advanced.slideToggle();
+      $options.slideToggle();
     });
 
     $("#placeLocation a").on("click", function(event) {

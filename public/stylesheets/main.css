@@ -7,10 +7,19 @@
   top: 14% !important;
 }
 
-#advanced, #results { 
+#options { 
   display: none;
 }
 
 #wrapper {
   min-height: 500px;
+}
+
+#map {
+	height: 400px;
+	width: 100%;
+}
+
+.jumbotron p, .jumbotron address {
+	margin-bottom: 10px;
 }

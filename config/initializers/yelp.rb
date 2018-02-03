@@ -1,4 +1,5 @@
 require 'dotenv'
+
 Dotenv.load
 
 require 'yaml'

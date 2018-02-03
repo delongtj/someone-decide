@@ -1,6 +1,7 @@
 require "sinatra"
 require "pry"
 require './config/initializers/yelp.rb'
+require './config/initializers/google.rb'
 require "sinatra/cookies"
 require "json"
 require "yelp"
@@ -49,7 +50,9 @@ post '/go' do
 
     opts = {
       category_filter: 'restaurants',
-      radius_filter: radius.round
+      open_now: true,
+      radius_filter: radius.round,
+      limit: 50
     }
 
     opts[:term] = params[:keyword] unless params[:keyword].nil?
@@ -59,7 +62,14 @@ post '/go' do
     results = []
 
     response.businesses.each do |business|
-      results << { id: business.id, name: business.name, location: business.location.display_address.join(' ').gsub(',', '') }
+      results << { 
+        id: business.id,
+        name: business.name,
+        categories: business.categories.map(&:first).join(', '),
+        location: business.location.display_address.join(' ').gsub(',', ''),
+        latitude: business.location.coordinate.latitude,
+        longitude: business.location.coordinate.longitude
+      }
     end
 
     session[:request_hash] = request_hash
@@ -78,7 +88,10 @@ post '/go' do
     {
       place_id: result[:id],
       name: result[:name],
+      categories: result[:categories],
       location: result[:location],
+      latitude: result[:latitude],
+      longitude: result[:longitude],
       open_until: "",
 
     }.to_json
