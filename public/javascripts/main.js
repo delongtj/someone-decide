@@ -46,6 +46,9 @@
 
       if(map == null) {
         renderMap(geoPosition);
+      } else {
+        map.setCenter({ lat: position.coords.latitude, lng: position.coords.longitude })
+        map.setZoom(calculateZoomLevel())
       }
 
       if(resultMarker != null) {
@@ -75,12 +78,24 @@
       })
     }
 
+    function calculateZoomLevel() {
+      var radius = $slider.val()
+
+      var val = -0.1333 * Math.pow(radius, 2) - 0.06667 * radius + 14
+
+      return Math.round(val)
+    }
+
     function renderMap(position) {
       var here = { lat: position.coords.latitude, lng: position.coords.longitude };
 
       map = new google.maps.Map(document.getElementById('map'), {
         zoom: 13,
-        center: here
+        center: here,
+        mapTypeControl: false,
+        fullscreenControl: false,
+        minZoom: 11,
+        maxZoom: 20
       });
 
       locationMarker = new google.maps.Marker({
@@ -155,10 +170,16 @@
       
       if($toggleOptions.html() == "Options")
         $toggleOptions.html("Close Options");
-      else
+      else {
         $toggleOptions.html("Options");
+      }
 
-      $options.slideToggle();
+      $options.slideToggle(400, function(){
+        if($toggleOptions.html() == "Options") {
+          $slider.val(3).trigger('input')
+          $keyword.val('')
+        }
+      })
     });
 
     $("#placeLocation a").on("click", function(event) {
