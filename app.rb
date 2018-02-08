@@ -50,7 +50,8 @@ post '/go' do
 
     opts = {
       category_filter: 'restaurants',
-      radius_filter: radius.round
+      radius_filter: radius.round,
+      limit: 40
     }
 
     opts[:term] = params[:keyword] unless params[:keyword].nil?
@@ -63,6 +64,8 @@ post '/go' do
       results << { 
         id: business.id,
         name: business.name,
+        url: business.url,
+        rating_url: business.rating_img_url,
         categories: business.categories.map(&:first).join(', '),
         location: business.location.display_address.join(' ').gsub(',', ''),
         latitude: business.location.coordinate.latitude,
@@ -90,8 +93,8 @@ post '/go' do
       location: result[:location],
       latitude: result[:latitude],
       longitude: result[:longitude],
-      open_until: "",
-
+      url: result[:url],
+      rating_url: result[:rating_url]
     }.to_json
   else
     {}.to_json
