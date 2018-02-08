@@ -46,9 +46,6 @@
 
       if(map == null) {
         renderMap(geoPosition);
-      } else {
-        map.setCenter({ lat: position.coords.latitude, lng: position.coords.longitude })
-        map.setZoom(calculateZoomLevel())
       }
 
       if(resultMarker != null) {
@@ -78,14 +75,6 @@
       })
     }
 
-    function calculateZoomLevel() {
-      var radius = $slider.val()
-
-      var val = -0.1333 * Math.pow(radius, 2) - 0.06667 * radius + 14
-
-      return Math.round(val)
-    }
-
     function renderMap(position) {
       var here = { lat: position.coords.latitude, lng: position.coords.longitude };
 
@@ -111,8 +100,20 @@
         map: map
       });
 
+      var bounds = new google.maps.LatLngBounds()
+
+      bounds.extend(resultMarker.getPosition())
+      bounds.extend(locationMarker.getPosition())
+
+      map.fitBounds(bounds, 100)
+
+      addPlaceInfoWindow(response)
+    }
+
+    function addPlaceInfoWindow(response) {
       var content = '<div id="results" data-place-id="' + response.place_id + '">' + 
-          '<p class="lead">' + response.name + '</p>' +
+          '<p class="lead"><a href="' + response.url + '" target="_blank" >' + response.name + '</a></p>' +
+          //'<p><img src="' + response.rating_url + '" /></p>' +
           '<p><small>' + response.categories + '</small></p>' +
           '<address>' + response.location + '</address>' +
           '<a class="btn btn-xs btn-danger" id="blacklist" href="#">Never again</a>' + 
