@@ -127,9 +127,10 @@
     }
 
     function addPlaceInfoWindow(response) {
-      var content = '<div id="results" data-place-id="' + response.place_id + '">' + 
-          //'<p class="lead"><a href="' + response.url + '" target="_blank" >' + response.name + '</a></p>' +
-          '<p class="lead">' + response.name + '</p>' +
+      var directionsHref = "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=" + encodeURI(response.name) + "&destination_place_id=" + response.id
+      
+      var content = '<div id="results" data-place-id="' + response.id + '">' + 
+          '<p class="lead"><a href="' + directionsHref + '" target="_blank" >' + response.name + '</a></p>' +
           '<address>' + response.location + '</address>' +
         '</div>';
 
