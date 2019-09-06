@@ -1,15 +1,12 @@
 require "sinatra"
 require "pry"
-require './config/initializers/yelp.rb'
 require './config/initializers/google.rb'
 require "sinatra/cookies"
 require "json"
-require "yelp"
-
-enable :sessions
+require "google_places"
 
 get '/' do
-  unless request.secure? || request.env['REQUEST_URI'].match('localhost')
+  unless request.secure? || request.env['SERVER_NAME'].match('localhost')
     redirect to(request.env['REQUEST_URI'].gsub('http://', 'https://'))
   end
 
@@ -21,13 +18,9 @@ get '/about' do
 end
 
 get '/heartbeat' do
-  client = Yelp::Client.new({ consumer_key: YELP['consumer_key'],
-                            consumer_secret: YELP['consumer_secret'],
-                            token: YELP['token'],
-                            token_secret: YELP['token_secret']
-                          })
+  client = GooglePlaces::Client.new(GOOGLE["maps_api_key"])
 
-  client.search('Nashville').businesses.map(&:name)
+  client.spots(36.0679, -86.7194).to_s
 end
 
 post '/go' do
@@ -37,66 +30,30 @@ post '/go' do
     radius = params[:radius_in_miles].to_f * 1609.34
   end
 
-  request_hash = params.to_json
+  client = GooglePlaces::Client.new(GOOGLE["maps_api_key"])
 
-  if session[:request_hash] == request_hash && session[:results]
-    results = session[:results]
-  else
-    client = Yelp::Client.new({ consumer_key: YELP['consumer_key'],
-                            consumer_secret: YELP['consumer_secret'],
-                            token: YELP['token'],
-                            token_secret: YELP['token_secret']
-                          })
+  opts = {
+    types: ['restaurant'],
+    radius: radius.round,
+    opennow: true
+  }
 
-    opts = {
-      category_filter: 'restaurants',
-      radius_filter: radius.round,
-      limit: 40
+  opts[:keyword] = params[:keyword] unless params[:keyword].nil?
+
+  spots = client.spots(params[:lat], params[:lng], opts)
+
+  results = []
+
+  spots.each do |spot|
+    results << { 
+      id: spot.place_id,
+      name: spot.name,
+      url: spot.url,
+      location: spot.vicinity,
+      latitude: spot.lat,
+      longitude: spot.lng
     }
-
-    opts[:term] = params[:keyword] unless params[:keyword].nil?
-
-    response = client.search_by_coordinates({ latitude: params[:lat], longitude: params[:lng] }, opts)
-
-    results = []
-
-    response.businesses.each do |business|
-      results << { 
-        id: business.id,
-        name: business.name,
-        url: business.url,
-        rating_url: business.rating_img_url,
-        categories: business.categories.map(&:first).join(', '),
-        location: business.location.display_address.join(' ').gsub(',', ''),
-        latitude: business.location.coordinate.latitude,
-        longitude: business.location.coordinate.longitude
-      }
-    end
-
-    session[:request_hash] = request_hash
-    session[:results] = results
   end
 
-  unless cookies[:blacklist].nil?
-    blacklist = cookies[:blacklist].split("|")
-
-    results.reject! { |b| blacklist.include?(b[:id]) }
-  end
-
-  unless results.empty?
-    result = results.sample
-
-    {
-      place_id: result[:id],
-      name: result[:name],
-      categories: result[:categories],
-      location: result[:location],
-      latitude: result[:latitude],
-      longitude: result[:longitude],
-      url: result[:url],
-      rating_url: result[:rating_url]
-    }.to_json
-  else
-    {}.to_json
-  end
+  results.to_json
 end

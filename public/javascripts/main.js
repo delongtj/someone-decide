@@ -20,6 +20,8 @@
 
     function getLocation() {
       if(geocodeNeeded()) {
+        clearResults()
+
         navigator.geolocation.getCurrentPosition(getResults);
       }
       else {
@@ -40,6 +42,10 @@
       return false;
     }
 
+    function clearResults() {
+      localStorage.removeItem('results')
+    }
+
     function getResults(position) {
       geoPosition = position;
       geoPositionTimestamp = new Date().getTime();
@@ -52,27 +58,37 @@
         resultMarker.setMap(null)
       }
 
-      $.ajax({
-        method: "POST",
-        dataType: "JSON",
-        url: "/go",
-        data: { 
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          radius_in_miles: $slider.val(),
-          keyword: $keyword.val()
-        }
-      }).done(function(response){
-        if(typeof(response.name) != "undefined"){
-          addPlace(response)
-        }
-        else {
+      if(localStorage.getItem('results') == null) {
+        $.ajax({
+          method: "POST",
+          dataType: "JSON",
+          url: "/go",
+          data: { 
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            radius_in_miles: $slider.val(),
+            keyword: $keyword.val()
+          }
+        }).done(function(response){
+          localStorage.setItem('results', JSON.stringify(response))
 
-        }
+          var place = response[Math.floor(Math.random() * response.length)]
 
-      }).always(function(){
-        spinner.stop();
-      })
+          addPlace(place)
+        }).always(function(){
+          spinner.stop();
+        })
+      } else {
+        // For more consistent feel
+        setTimeout(function() {
+          var results = JSON.parse(localStorage.getItem('results'))
+          var place = results[Math.floor(Math.random() * results.length)]
+
+          addPlace(place)
+
+          spinner.stop();
+        }, 500)
+      }
     }
 
     function renderMap(position) {
@@ -112,11 +128,9 @@
 
     function addPlaceInfoWindow(response) {
       var content = '<div id="results" data-place-id="' + response.place_id + '">' + 
-          '<p class="lead"><a href="' + response.url + '" target="_blank" >' + response.name + '</a></p>' +
-          //'<p><img src="' + response.rating_url + '" /></p>' +
-          '<p><small>' + response.categories + '</small></p>' +
+          //'<p class="lead"><a href="' + response.url + '" target="_blank" >' + response.name + '</a></p>' +
+          '<p class="lead">' + response.name + '</p>' +
           '<address>' + response.location + '</address>' +
-          '<a class="btn btn-xs btn-danger" id="blacklist" href="#">Never again</a>' + 
         '</div>';
 
       var infoWindow = new google.maps.InfoWindow({ content: content })
@@ -138,25 +152,6 @@
       getLocation();
     });
 
-    $("body").on("click", "#blacklist", function(event){
-      ga('send', 'event', 'button', 'click', 'action', 'blacklist');
-
-      event.preventDefault();
-
-      var place_id = $("#results").attr("data-place-id");
-
-      var cookie = Cookies.get('blacklist') || "";
-
-      if (cookie == "")
-        cookie = place_id
-      else
-        cookie = cookie + '|' + place_id
-
-      Cookies.set('blacklist', cookie);
-
-      resultMarker.setMap(null)
-    });
-
     $slider.on("input", function(event){
       $range.html($slider.val());
 
@@ -164,6 +159,8 @@
         $units.html("mile");
       else
         $units.html("miles");
+
+      clearResults()
     });
 
     $toggleOptions.on("click", function(event) {
@@ -185,6 +182,10 @@
 
     $("#placeLocation a").on("click", function(event) {
       ga('send', 'event', 'link', 'click', 'maps');
+    });
+
+    $keyword.on("change", function(event) {
+      clearResults()
     });
 
     $slider.trigger("input");

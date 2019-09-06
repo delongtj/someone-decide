@@ -8,4 +8,4 @@ gem 'pry'
 gem 'pry-nav'
 gem 'dotenv'
 
-gem 'yelp'
+gem 'google_places'
